@@ -1,0 +1,68 @@
+import fs from 'fs/promises';
+import { isInt16Array } from 'util/types';
+
+async function main() {
+  const raw = await fs.readFile('input.txt', { encoding: 'utf-8' });
+  const lines = raw.split('\n');
+  const pairs = lines.map(toPairedAssignments);
+  const results = pairs.map(doAssignmentsOverlap);
+  const numberOfTrue = results.reduce(
+    (acc: number, cur: boolean) => (cur ? acc + 1 : acc),
+    0
+  ) as number;
+  console.log(numberOfTrue);
+}
+
+function toPairedAssignments(line: string): PairedAssignment {
+  const rawAssignments = line.split(',');
+  const [first, second] = rawAssignments.map(toAssignment);
+  return {
+    first,
+    second,
+  };
+}
+
+function toAssignment(rawAssignment: string): SectionAssignment {
+  const [start, end] = rawAssignment.split('-').map((str) => parseInt(str));
+  return {
+    start,
+    end,
+  };
+}
+
+function doAssignmentsOverlap(pair: PairedAssignment): boolean {
+  const { first, second } = pair;
+  return isOverlapping(first, second);
+}
+
+function isOverlapping(a: SectionAssignment, b: SectionAssignment) {
+  const result = toRange(a)
+    .map((num) => isNumInSectionAssignment(num, b))
+    .reduce((acc, cur) => acc || cur, false);
+  console.log(a, 'is overlapping with', b, result);
+  return result;
+}
+
+function toRange(section: SectionAssignment): number[] {
+  const result: number[] = [];
+  for (let i = section.start; i <= section.end; i++) {
+    result.push(i);
+  }
+  return result;
+}
+
+function isNumInSectionAssignment(num: number, section: SectionAssignment) {
+  return section.start <= num && section.end >= num;
+}
+
+main();
+
+type PairedAssignment = {
+  first: SectionAssignment;
+  second: SectionAssignment;
+};
+
+type SectionAssignment = {
+  start: number;
+  end: number;
+};

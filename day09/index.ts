@@ -10,6 +10,7 @@ export class Rope {
     for (let i = 0; i < motion.times; i++) {
       this.head = this.head.move(motion.direction);
       this.tail = this.tail.move(this.head);
+      display(motion.direction, this.head, this.tail);
     }
   }
 
@@ -22,8 +23,43 @@ export class Rope {
   }
 
   tailUniqueCoordsVisisted(): number {
-    return this.tail.numberOfUniqueCoordsVisted() + 1;
+    return this.tail.numberOfUniqueCoordsVisted();
   }
+}
+
+function display(direction: Direction, head: Head, tail: Tail) {
+  const headCoords = head.coords;
+  const tailCoords = tail.coords;
+  //const grid = createGrid('.', 251, 251);
+  //addToGrid(grid, 'T', tailCoords, { x: 126, y: 126 });
+  //addToGrid(grid, 'H', headCoords, { x: 126, y: 126 });
+
+  console.log();
+  console.log('Direction: ', direction);
+  console.log('Head: ', headCoords);
+  console.log('Tail: ', tailCoords);
+  console.log('Tail unique coords visted : ', tail.uniqueCoordsVisited);
+  console.log(
+    'Tail number of unique coords visited: ',
+    tail.numberOfUniqueCoordsVisted()
+  );
+  //console.log(grid.map((row) => row.join('')).join('\n'));
+}
+
+function createGrid(char: string, width: number, height: number): string[][] {
+  return char
+    .repeat(height)
+    .split('')
+    .map((row) => row.repeat(width).split(''));
+}
+
+function addToGrid(
+  grid: string[][],
+  char: string,
+  coords: Coords,
+  offset: Coords = { x: 4, y: 4 }
+) {
+  return (grid[coords.y + offset.y][coords.x + offset.x] = char);
 }
 
 class Head {
@@ -53,7 +89,7 @@ class Head {
 class Tail {
   constructor(
     readonly coords: Coords,
-    private uniqueCoordsVisited: Set<Coords> = new Set<Coords>()
+    public uniqueCoordsVisited: Coords[] = []
   ) {}
 
   move(head: Head): Tail {
@@ -66,7 +102,7 @@ class Tail {
         newCoords.y = head.coords.y;
       }
       newCoords.x = newCoords.x + 1;
-      this.uniqueCoordsVisited.add(newCoords);
+      this.add(newCoords);
     }
 
     if (xDiff === -2) {
@@ -74,25 +110,37 @@ class Tail {
         newCoords.y = head.coords.y;
       }
       newCoords.x = newCoords.x - 1;
-      this.uniqueCoordsVisited.add(newCoords);
+      this.add(newCoords);
     }
 
     if (yDiff === -2) {
+      if (xDiff !== 0) {
+        newCoords.x = head.coords.x;
+      }
       newCoords.y = newCoords.y - 1;
-      this.uniqueCoordsVisited.add(newCoords);
+      this.add(newCoords);
     }
 
     if (yDiff === 2) {
+      if (xDiff !== 0) {
+        newCoords.x = head.coords.x;
+      }
       newCoords.y = newCoords.y + 1;
-      this.uniqueCoordsVisited.add(newCoords);
+      this.add(newCoords);
     }
 
-    return new Tail(newCoords, new Set(this.uniqueCoordsVisited));
+    return new Tail(newCoords, [...this.uniqueCoordsVisited]);
+  }
+
+  private add(coords: Coords): void {
+    const existingEntry = this.uniqueCoordsVisited.find(
+      (entry) => entry.x === coords.x && entry.y === coords.y
+    );
+    existingEntry ? '' : this.uniqueCoordsVisited.push(coords);
   }
 
   numberOfUniqueCoordsVisted(): number {
-    console.log(this.uniqueCoordsVisited);
-    return this.uniqueCoordsVisited.size;
+    return this.uniqueCoordsVisited.length + 1;
   }
 }
 

@@ -143,4 +143,18 @@ describe('Day 09: Rope Bridge - part one', () => {
     //expect(rope.tailCoords()).toStrictEqual({ x: -1, y: 1 });
     expect(rope.tailUniqueCoordsVisisted()).toEqual(13);
   });
+
+  it('foo', () => {
+    // given
+    const rope = new Rope({ x: 0, y: 0 });
+    const motions = [new Motion('R', 1), new Motion('U', 2)];
+
+    // when
+    motions.forEach((m) => rope.move(m));
+
+    // then
+    expect(rope.headCoords()).toStrictEqual({ x: 1, y: -2 });
+    expect(rope.tailCoords()).toStrictEqual({ x: 1, y: -1 });
+    expect(rope.tailUniqueCoordsVisisted()).toEqual(2);
+  });
 });

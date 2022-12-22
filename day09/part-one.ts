@@ -6,14 +6,11 @@ async function main() {
   const lines = raw.split('\n');
 
   const rope = new Rope({ x: 0, y: 0 });
-  lines.forEach((line) => {
+  lines.forEach(async (line) => {
     const [direction, times] = line.split(' ');
     const motion = new Motion(direction as Direction, parseInt(times));
     rope.move(motion);
   });
-
-  console.log('%o', rope);
-  console.log(rope.tailUniqueCoordsVisisted());
 }
 
 main();

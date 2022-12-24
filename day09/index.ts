@@ -1,162 +1,170 @@
 export class Rope {
-  private head: Head;
-  private tail: Tail;
-  constructor(start: Coords) {
-    this.head = new Head(start);
-    this.tail = new Tail(start);
-  }
+  constructor(public head: Head, public tail: Tail[]) {}
 
   move(motion: Motion): void {
     for (let i = 0; i < motion.times; i++) {
-      this.head = this.head.move(motion.direction);
-      this.tail = this.tail.move(this.head);
-      display(motion.direction, this.head, this.tail);
+      this.head.move(motion.direction);
+
+      let prevKnot: Knot = this.head;
+      for (const knot of this.tail) {
+        knot.move(prevKnot);
+        prevKnot = knot;
+      }
     }
   }
-
-  headCoords(): Coords {
-    return this.head.coords;
-  }
-
-  tailCoords(): Coords {
-    return this.tail.coords;
-  }
-
-  tailUniqueCoordsVisisted(): number {
-    return this.tail.numberOfUniqueCoordsVisted();
-  }
 }
 
-function display(direction: Direction, head: Head, tail: Tail) {
-  const headCoords = head.coords;
-  const tailCoords = tail.coords;
-  //const grid = createGrid('.', 251, 251);
-  //addToGrid(grid, 'T', tailCoords, { x: 126, y: 126 });
-  //addToGrid(grid, 'H', headCoords, { x: 126, y: 126 });
+export class Head implements Knot {
+  constructor(private _coords: Coordinates = { x: 0, y: 0 }) {}
 
-  console.log();
-  console.log('Direction: ', direction);
-  console.log('Head: ', headCoords);
-  console.log('Tail: ', tailCoords);
-  console.log('Tail unique coords visted : ', tail.uniqueCoordsVisited);
-  console.log(
-    'Tail number of unique coords visited: ',
-    tail.numberOfUniqueCoordsVisted()
-  );
-  //console.log(grid.map((row) => row.join('')).join('\n'));
-}
-
-function createGrid(char: string, width: number, height: number): string[][] {
-  return char
-    .repeat(height)
-    .split('')
-    .map((row) => row.repeat(width).split(''));
-}
-
-function addToGrid(
-  grid: string[][],
-  char: string,
-  coords: Coords,
-  offset: Coords = { x: 4, y: 4 }
-) {
-  return (grid[coords.y + offset.y][coords.x + offset.x] = char);
-}
-
-class Head {
-  readonly coords: Coords;
-
-  constructor(coords: Coords) {
-    this.coords = coords;
-  }
-
-  move(direction: Direction): Head {
-    const { x, y } = this.coords;
+  move(direction: Direction): void {
+    const { x, y } = this._coords;
     switch (direction) {
-      case 'R':
-        return new Head({ x: x + 1, y });
-      case 'L':
-        return new Head({ x: x - 1, y });
       case 'U':
-        return new Head({ x, y: y - 1 });
+        this._coords = { x, y: y - 1 };
+        break;
+      case 'R':
+        this._coords = { x: x + 1, y };
+        break;
       case 'D':
-        return new Head({ x, y: y + 1 });
+        this._coords = { x, y: y + 1 };
+        break;
+      case 'L':
+        this._coords = { x: x - 1, y };
+        break;
       default:
         throw new Error('Unknown direction: ' + direction);
     }
   }
+
+  public get coords() {
+    return this._coords;
+  }
 }
 
-class Tail {
+export class Tail implements Knot {
   constructor(
-    readonly coords: Coords,
-    public uniqueCoordsVisited: Coords[] = []
-  ) {}
-
-  move(head: Head): Tail {
-    const xDiff = head.coords.x - this.coords.x;
-    const yDiff = head.coords.y - this.coords.y;
-
-    const newCoords = { ...this.coords };
-    if (xDiff === 2) {
-      if (yDiff !== 0) {
-        newCoords.y = head.coords.y;
-      }
-      newCoords.x = newCoords.x + 1;
-      this.add(newCoords);
-    }
-
-    if (xDiff === -2) {
-      if (yDiff !== 0) {
-        newCoords.y = head.coords.y;
-      }
-      newCoords.x = newCoords.x - 1;
-      this.add(newCoords);
-    }
-
-    if (yDiff === -2) {
-      if (xDiff !== 0) {
-        newCoords.x = head.coords.x;
-      }
-      newCoords.y = newCoords.y - 1;
-      this.add(newCoords);
-    }
-
-    if (yDiff === 2) {
-      if (xDiff !== 0) {
-        newCoords.x = head.coords.x;
-      }
-      newCoords.y = newCoords.y + 1;
-      this.add(newCoords);
-    }
-
-    return new Tail(newCoords, [...this.uniqueCoordsVisited]);
+    private _coords: Coordinates = { x: 0, y: 0 },
+    private _uniqueCoordsVisited: Coordinates[] = []
+  ) {
+    this._uniqueCoordsVisited.push(this.coords);
   }
 
-  private add(coords: Coords): void {
-    const existingEntry = this.uniqueCoordsVisited.find(
+  move(prevKnot: Knot): void {
+    const maybeNewCoords = this.calcMaybeNewCoords(
+      this.coords,
+      prevKnot.coords
+    );
+    if (maybeNewCoords) {
+      this._coords = maybeNewCoords;
+      this.addUniqueCoords(maybeNewCoords);
+    }
+  }
+
+  private calcMaybeNewCoords(
+    own: Coordinates,
+    other: Coordinates
+  ): Coordinates | null {
+    const xDiff = other.x - own.x;
+    const yDiff = other.y - own.y;
+
+    if (Math.abs(yDiff) === 2) {
+      const newX = xDiff === 0 ? own.x : other.x;
+      const newY = yDiff > 0 ? own.y + 1 : own.y - 1;
+      return { x: newX, y: newY };
+    }
+
+    if (Math.abs(xDiff) === 2) {
+      const newY = yDiff === 0 ? own.y : other.y;
+      const newX = xDiff > 0 ? own.x + 1 : own.x - 1;
+      return { x: newX, y: newY };
+    }
+
+    return null;
+  }
+
+  get coords() {
+    return this._coords;
+  }
+
+  get uniqueCoordsVisited(): Coordinates[] {
+    return this._uniqueCoordsVisited;
+  }
+
+  private addUniqueCoords(coords: Coordinates): void {
+    const existing = this._uniqueCoordsVisited.find(
       (entry) => entry.x === coords.x && entry.y === coords.y
     );
-    existingEntry ? '' : this.uniqueCoordsVisited.push(coords);
-  }
 
-  numberOfUniqueCoordsVisted(): number {
-    return this.uniqueCoordsVisited.length + 1;
+    if (existing) {
+      return;
+    }
+
+    this._uniqueCoordsVisited.push(coords);
   }
 }
 
-type Coords = {
+export function toMotion(line: string): Motion {
+  const [direction, times] = line.split(' ');
+  return {
+    direction,
+    times: parseInt(times),
+  } as Motion;
+}
+
+export function render(
+  rope: Rope,
+  mapSize: MapSize,
+  offset: Coordinates
+): string {
+  const map = createMap(mapSize);
+
+  for (let i = rope.tail.length - 1; i >= 0; i--) {
+    const knot = rope.tail.at(i);
+    knot ? addToMap(knot, map, '' + (i + 1), offset) : '';
+  }
+
+  addToMap(rope.head, map, 'H', offset);
+
+  return map.map((row) => row.join('')).join('\n');
+}
+
+function createMap(mapSize: MapSize, char: string = '.'): string[][] {
+  return char
+    .repeat(mapSize.height)
+    .split('')
+    .map((row) => row.repeat(mapSize.width).split(''));
+}
+
+function addToMap(
+  knot: Knot,
+  map: string[][],
+  char: string,
+  offset: Coordinates
+): void {
+  const { x, y } = knot.coords;
+  const newY = y + offset.y;
+  const newX = x + offset.x;
+  map[newY][newX] = char;
+}
+
+export type Motion = {
+  direction: Direction;
+  times: number;
+};
+
+type Direction = 'R' | 'L' | 'U' | 'D';
+
+export type Coordinates = {
   x: number;
   y: number;
 };
 
-export class Motion {
-  readonly direction: Direction;
-  readonly times: number;
-
-  constructor(direction: Direction, times: number) {
-    this.direction = direction;
-    this.times = times;
-  }
+export interface Knot {
+  coords: Coordinates;
 }
 
-export type Direction = 'R' | 'L' | 'U' | 'D';
+type MapSize = {
+  width: number;
+  height: number;
+};

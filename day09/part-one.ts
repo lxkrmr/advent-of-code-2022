@@ -1,16 +1,25 @@
-import { loadFile } from '../lib/utils';
-import { Motion, Direction, Rope } from './index';
+import { Rope, Motion, Head, Tail } from './index';
+import { loadLines } from '../lib/utils';
 
 async function main() {
-  const raw = await loadFile('input.txt');
-  const lines = raw.split('\n');
+  const lines = await loadLines('input-part-one.txt');
 
-  const rope = new Rope({ x: 0, y: 0 });
-  lines.forEach(async (line) => {
-    const [direction, times] = line.split(' ');
-    const motion = new Motion(direction as Direction, parseInt(times));
+  const rope = new Rope(new Head(), [new Tail()]);
+
+  lines.forEach((line) => {
+    const motion = toMotion(line);
     rope.move(motion);
   });
+
+  console.log(rope.tail[0].uniqueCoordsVisited.length);
+}
+
+function toMotion(line: string): Motion {
+  const [direction, times] = line.split(' ');
+  return {
+    direction,
+    times: parseInt(times),
+  } as Motion;
 }
 
 main();
